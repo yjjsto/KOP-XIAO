@@ -4,16 +4,17 @@ Thanks to & modified from
 1. https://gist.githubusercontent.com/Hyseen/b06e911a41036ebc36acf04ddebe7b9a/raw/nf_check.js
 2. https://github.com/AtlantisGawrGura/Quantumult-X-Scripts/blob/main/media.js
 3. https://github.com/CoiaPrant/MediaUnlock_Test/blob/main/check.sh
-
+3. https://github.com/Netflixxp/chatGPT/blob/main/chat.sh
 
 For Quantumult-X 598+ ONLY!!
-2022-02-22 - 14:20
+
+2023-02-14
+
+- 支持 ChatGPT 检测
 
 [task_local]
 
 event-interaction https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/Scripts/streaming-ui-check.js, tag=流媒体-解锁查询, img-url=checkmark.seal.system, enabled=true
-
-
 
 @XIAO_KOP
 
@@ -24,9 +25,11 @@ const BASE_URL_YTB = "https://www.youtube.com/premium";
 const BASE_URL_DISNEY = 'https://www.disneyplus.com';
 const BASE_URL_Dazn = "https://startup.core.indazn.com/misl/v5/Startup";
 const BASE_URL_Param = "https://www.paramountplus.com/"
-const FILM_ID = 81215567
+const FILM_ID = 81280792
 const BASE_URL_Discovery_token = "https://us1-prod-direct.discoveryplus.com/token?deviceId=d1a4a5d25212400d1e6985984604d740&realm=go&shortlived=true"
 const BASE_URL_Discovery = "https://us1-prod-direct.discoveryplus.com/users/me"
+const BASE_URL_GPT = 'https://chat.openai.com/'
+const Region_URL_GPT = 'https://chat.openai.com/cdn-cgi/trace'
 
 const link = { "media-url": "https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/img/southpark/7.png" } 
 const policy_name = "Netflix" //填入你的 netflix 策略组名
@@ -66,6 +69,7 @@ let result = {
   "Disney": "<b>Disneyᐩ: </b>检测失败，请重试 ❗️",
   "Paramount" : "<b>Paramountᐩ: </b>检测失败，请重试 ❗️",
   "Discovery" : "<b>Discoveryᐩ: </b>检测失败，请重试 ❗️",
+  "ChatGPT" : "<b>ChatGPT: </b>检测失败，请重试 ❗️"
   //"Google": "Google 定位: 检测失败，请重试"
 
 }
@@ -78,8 +82,8 @@ const message = {
   testYTB()
   testDazn()
   testParam()
-  let [{ region, status }] = await Promise.all([testDisneyPlus(),testNf(FILM_ID),testDiscovery()])
-  console.log(result["Netflix"])
+  let [{ region, status }] = await Promise.all([testDisneyPlus(),testNf(FILM_ID),testDiscovery(),testChatGPT()])
+  console.log("NetFlix Result:"+result["Netflix"])
   console.log(`testDisneyPlus: region=${region}, status=${status}`)
   if (status==STATUS_COMING) {
     //console.log(1)
@@ -95,7 +99,7 @@ const message = {
     result["Disney"] = "<b>Disneyᐩ:</b> 检测超时 🚦 "
   }
 
-  let content = "------------------------------"+"</br>"+([result["YouTube"],result["Netflix"],result["Disney"],result["Dazn"],result["Paramount"],result["Discovery"]]).join("</br></br>")
+  let content = "------------------------------"+"</br>"+([result["YouTube"],result["Netflix"],result["Disney"],result["Dazn"],result["Paramount"],result["Discovery"],result["ChatGPT"]]).join("</br></br>")
   content = content + "</br>------------------------------</br>"+"<font color=#CD5C5C >"+"<b>节点</b> ➟ " + $environment.params+ "</font>"
   content =`<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + content + `</p>`
 //  cnt = `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` +'----------------------</br></br>'+result["Disney"]+'</br></br>----------------------</br>'+$environment.params + `</p>`
@@ -106,7 +110,7 @@ $configuration.sendMessage(message).then(resolve => {
     }
     if (resolve.ret) {
       let output=JSON.stringify(resolve.ret[message.content])? JSON.stringify(resolve.ret[message.content]).replace(/\"|\[|\]/g,"").replace(/\,/g," ➟ ") : $environment.params
-      let content = "--------------------------------------</br>"+([result["Dazn"],result["Discovery"],result["Paramount"],result["Disney"],result["Netflix"],result["YouTube"]]).join("</br></br>")
+      let content = "--------------------------------------</br>"+([result["Dazn"],result["Discovery"],result["Paramount"],result["Disney"],result["ChatGPT"],result["Netflix"],result["YouTube"]]).join("</br></br>")
       content = content + "</br>--------------------------------------</br>"+"<font color=#CD5C5C>"+"<b>节点</b> ➟ " + output+ "</font>"
       content =`<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + content + `</p>`
       //$notify(typeof(output),output)
@@ -130,7 +134,7 @@ $configuration.sendMessage(message).then(resolve => {
     }
     if (resolve.ret) {
       let output=JSON.stringify(resolve.ret[message.content])? JSON.stringify(resolve.ret[message.content]).replace(/\"|\[|\]/g,"").replace(/\,/g," ➟ ") : $environment.params
-      let content = "--------------------------------------</br>"+([result["Dazn"],result["Discovery"],result["Paramount"],result["Disney"],result["Netflix"],result["YouTube"]]).join("</br></br>")
+      let content = "--------------------------------------</br>"+([result["Dazn"],result["Discovery"],result["Paramount"],result["Disney"],result["ChatGPT"],result["Netflix"],result["YouTube"]]).join("</br></br>")
       content = content + "</br>--------------------------------------</br>"+"<font color=#CD5C5C>"+"<b>节点</b> ➟ " + output+ "</font>"
       content =`<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + content + `</p>`
       //$notify(typeof(output),output)
@@ -157,7 +161,7 @@ async function testDisneyPlus() {
 //  if (cnbl == 2) {
 //    return { region, status: STATUS_COMING }
 //  }
-    let { countryCode, inSupportedLocation } = await Promise.race([getLocationInfo(), timeout(7000)])
+    let { countryCode, inSupportedLocation, accessToken } = await Promise.race([getLocationInfo(), timeout(7000)])
     console.log(`getLocationInfo: countryCode=${countryCode}, inSupportedLocation=${inSupportedLocation}`)
     
     region = countryCode ?? region
@@ -169,6 +173,13 @@ async function testDisneyPlus() {
       // 支持解锁
       return { region, status: STATUS_AVAILABLE }
     }
+
+   let support = await Promise.race([testPublicGraphqlAPI(accessToken), timeout(7000)])
+      if (!support) {
+      return { status: STATUS_NOT_AVAILABLE }
+    }
+    // 支持解锁
+    return { region, status: STATUS_AVAILABLE }
     
   } catch (error) {
     console.log("error:"+error)
@@ -209,15 +220,15 @@ function getLocationInfo() {
             attributes: {
               browserName: 'chrome',
               browserVersion: '94.0.4606',
-              manufacturer: 'microsoft',
+              manufacturer: 'apple',
               model: null,
-              operatingSystem: 'windows',
-              operatingSystemVersion: '10.0',
+              operatingSystem: 'macintosh',
+              operatingSystemVersion: '10.15.7',
               osDeviceIds: [],
             },
             deviceFamily: 'browser',
             deviceLanguage: 'en',
-            deviceProfile: 'windows',
+            deviceProfile: 'macosx',
           },
         },
       }),
@@ -230,11 +241,15 @@ function getLocationInfo() {
         console.log('getLocationInfo: ' + data)
         reject('Not Available')
         return
-      } else {let {
-        inSupportedLocation,
-        location: { countryCode },
-      } = JSON.parse(data)?.extensions?.sdk?.session
-        resolve({ inSupportedLocation, countryCode })
+      } else {
+        let {
+          token: { accessToken },
+          session: {
+            inSupportedLocation,
+            location: { countryCode },
+      },
+      } = JSON.parse(data)?.extensions?.sdk
+        resolve({ inSupportedLocation, countryCode, accessToken })
       }
     }, reason => {
       reject('Error')
@@ -255,8 +270,8 @@ function testHomePage() {
     }
     $task.fetch(opts0).then(response => {
       let data = response.body
-      console.log("homepage"+response.statusCode)
-      if (response.statusCode !== 200 || data.indexOf('unavailable') !== -1) {
+      console.log("DisneyPlus: homepage"+response.statusCode)
+      if (response.statusCode !== 200 || data.indexOf('not available in your region') !== -1) {
         reject('Not Available')
         return
       } else {
@@ -274,6 +289,33 @@ function testHomePage() {
     }, reason => {
       reject('Error')
       return
+    })
+  })
+}
+
+function testPublicGraphqlAPI(accessToken) {
+  return new Promise((resolve, reject) => {
+    let opts = {
+      url: 'https://disney.api.edge.bamgrid.com/v1/public/graphql',
+      headers: {
+        'Accept-Language': 'en',
+        Authorization: accessToken,
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36',
+      },
+      body: JSON.stringify({
+        query:
+          'query($preferredLanguages: [String!]!, $version: String) {globalization(version: $version) { uiLanguage(preferredLanguages: $preferredLanguages) }}',
+        variables: { version: '1.5.0', preferredLanguages: ['en'] },
+      }),
+    }
+
+    $task.fetch(opts).then( response => {
+
+      resolve(response.status === 200)
+    }, reason => {
+        reject('Error')
+        return
     })
   })
 }
@@ -328,6 +370,7 @@ function testNf(filmId) {
         resolve("nf:"+result["Netflix"])
         return 
       }
+      resolve("Netflix Test Error")
     }, reason => {
       result["Netflix"] = "<b>Netflix: </b>检测超时 🚦"
       console.log(result["Netflix"])
@@ -460,7 +503,6 @@ function testParam() {
 }
 
 
-
 function testDiscovery() {
   return new Promise((resolve, reject) =>{
     let option = {
@@ -493,7 +535,7 @@ function testDiscovery() {
         verify: false
       }
       $task.fetch(option1).then(response=> {
-        console.log("Check:"+response.statusCode)
+        console.log("Discovery+ Check:"+response.statusCode)
         let data = JSON.parse(response.body)
         let locationd = data["data"]["attributes"]["currentLocationTerritory"]
         if (locationd == "us") {
@@ -520,3 +562,54 @@ function testDiscovery() {
       resolve("discovery failed")
     })})}
 
+
+// openai test
+
+support_countryCodes=["T1","XX","AL","DZ","AD","AO","AG","AR","AM","AU","AT","AZ","BS","BD","BB","BE","BZ","BJ","BT","BA","BW","BR","BG","BF","CV","CA","CL","CO","KM","CR","HR","CY","DK","DJ","DM","DO","EC","SV","EE","FJ","FI","FR","GA","GM","GE","DE","GH","GR","GD","GT","GN","GW","GY","HT","HN","HU","IS","IN","ID","IQ","IE","IL","IT","JM","JP","JO","KZ","KE","KI","KW","KG","LV","LB","LS","LR","LI","LT","LU","MG","MW","MY","MV","ML","MT","MH","MR","MU","MX","MC","MN","ME","MA","MZ","MM","NA","NR","NP","NL","NZ","NI","NE","NG","MK","NO","OM","PK","PW","PA","PG","PE","PH","PL","PT","QA","RO","RW","KN","LC","VC","WS","SM","ST","SN","RS","SC","SL","SG","SK","SI","SB","ZA","ES","LK","SR","SE","CH","TH","TG","TO","TT","TN","TR","TV","UG","AE","US","UY","VU","ZM","BO","BN","CG","CZ","VA","FM","MD","PS","KR","TW","TZ","TL","GB"]
+
+function testChatGPT() {
+  return new Promise((resolve, reject) =>{
+    let option = {
+      url: BASE_URL_GPT,
+      opts: opts1,
+      timeout: 2800,
+    }
+    $task.fetch(option).then(response=> {
+      let resp = JSON.stringify(response)
+      console.log("ChatGPT Main Test")
+      let jdg = resp.indexOf("text/plain")
+      if(jdg == -1) {
+      let option1 = {
+        url: Region_URL_GPT,
+        opts: opts1,
+        timeout: 2800,
+      }
+      $task.fetch(option1).then(response=> {
+        console.log("ChatGPT Region Test")
+        let region = response.body.split("loc=")[1].split("\n")[0]
+        console.log("ChatGPT Region: "+region)
+        let res = support_countryCodes.indexOf(region)
+        if (res != -1) {
+          result["ChatGPT"] = "<b>ChatGPT: </b>支持 "+arrow+ "⟦"+flags.get(region.toUpperCase())+"⟧ 🎉"
+          console.log("支持 ChatGPT")
+          resolve("支持 ChatGPT")
+          return
+        } else {
+          result["ChatGPT"] = "<b>ChatGPT: </b>未支持 🚫"
+          console.log("不支持 ChatGPT")
+          resolve("不支持 ChatGPT")
+          return
+        }
+      }, reason => {
+        console.log("Check-Error"+reason)
+        resolve("ChatGPT failed")
+      })
+    } else {
+      result["ChatGPT"] = "<b>ChatGPT: </b>未支持 🚫"
+      console.log("不支持 ChatGPT")
+      resolve("不支持 ChatGPT")
+    }
+    }, reason => {
+      console.log("ChatGPT-Error"+reason)
+      resolve("ChatGPT failed")
+    })})}

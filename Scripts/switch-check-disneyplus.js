@@ -5,9 +5,15 @@ Thanks to & modified from
 
 For Quantumult-X 598+ ONLY!!
 
+2022-07-23 
+
 [task_local]
 
+// UI 查询版本
 event-interaction https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/Scripts/switch-check-disneyplus.js, tag=Disneyᐩ 检测&切换, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney.png, enabled=true
+
+//cron 版本
+0 8 * * * https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/Scripts/switch-check-disneyplus.js#policy=你的策略组名, tag=Disneyᐩ 定时切换, img-url=https://raw.githubusercontent.com/Koolson/Qure/master/IconSet/Color/Disney.png, enabled=true
 
 ps. 简单粗暴的 UI-Interaction 版本。无数据持久化、粗暴延迟等待。完美主义建议使用 Helge大佬的boxjs版本 https://t.me/QuanXNews/193
 
@@ -33,7 +39,20 @@ const STATUS_ERROR = -2
 
 const link = { "media-url": "https://raw.githubusercontent.com/KOP-XIAO/QuantumultX/master/img/southpark/7.png" } 
 
-var policy = $environment.params
+var cronsign = $environment.executeType == 0 || $environment.executeType == "0" || $environment.executeType == "-1"? "Y" : "N"
+var policy = $environment.executeType == 0 || $environment.executeType == "0" || $environment.executeType == "-1"? GetPolicy($environment.sourcePath) : $environment.params
+console.log(JSON.stringify($environment))
+console.log("策略组："+policy)
+
+function GetPolicy(cnt) {
+    if (cnt && cnt.indexOf("#policy=") !=-1) {
+        return decodeURIComponent(cnt.split("#policy=")[1].trim())
+    }else {
+        return ""
+    }
+}
+
+
 const message = {
     action: "get_customized_policy",
     content: policy
@@ -55,14 +74,14 @@ $configuration.sendMessage(message).then(resolve => {
         $done()
     }
     if (resolve.ret) {
-        output=JSON.stringify(resolve.ret[message.content])? JSON.parse(JSON.stringify(resolve.ret[message.content]["candidates"])) : [$environment.params]
+        output=JSON.stringify(resolve.ret[message.content])? JSON.parse(JSON.stringify(resolve.ret[message.content]["candidates"])) : [policy]
         pflag = JSON.stringify(resolve.ret[message.content])? pflag:0
         console.log("Disneyᐩ 检测&切换")
         console.log("节点or策略组："+pflag)
         console.log(JSON.stringify(resolve.ret))
         if (pflag==1) {
-        console.log("节点数量："+resolve.ret[$environment.params]["candidates"].length)
-        if(resolve.ret[$environment.params]["candidates"].length==0) {
+        console.log("节点数量："+resolve.ret[policy]["candidates"].length)
+        if(resolve.ret[policy]["candidates"].length==0) {
             $done({"title":"Disneyᐩ 检测&切换","htmlMessage":`<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin"><br><b>😭 无有效节点</b>`});
         }
     }
@@ -111,10 +130,10 @@ function Check() {
             console.log("开始排序")
             ReOrder(OKList)
         } else if (!OKList[0]){ //不支持
-            content = pflag==0 ? `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin"><br><b>😭 该节点不支持Disneyᐩ  </b><br><br>👇<br><br><font color=#FF5733>-------------------------<br><b>⟦ `+$environment.params+` ⟧ </b><br>-------------------------</font>`: `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br>❌  <b>⟦ "+$environment.params+ " ⟧ </b>⚠️ 切换失败<br><br><b>该策略组内未找到支持 Disneyᐩ </b> 的节点" + "<br><br><font color=#FF5733>-----------------------------<br><b>检测详情请查看JS脚本记录</b><br>-----------------------------</font>"+`</p>`
+            content = pflag==0 ? `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin"><br><b>😭 该节点不支持Disneyᐩ  </b><br><br>👇<br><br><font color=#FF5733>-------------------------<br><b>⟦ `+policy+` ⟧ </b><br>-------------------------</font>`: `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br>❌  <b>⟦ "+policy+ " ⟧ </b>⚠️ 切换失败<br><br><b>该策略组内未找到支持 Disneyᐩ </b> 的节点" + "<br><br><font color=#FF5733>-----------------------------<br><b>检测详情请查看JS脚本记录</b><br>-----------------------------</font>"+`</p>`
             $done({"title":"Disneyᐩ 检测&切换", "htmlMessage": content})
         } else if (OKList[0]){ //支持, 但为节点
-            content = `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin"><br><b>🎉 该节点支持 Disneyᐩ  ➟` + OKList[0].split(": 支持 ")[1]+`</b><br><br>👇<br><br><font color=#FF5733>-------------------------<br><b>⟦ `+$environment.params+` ⟧ </b><br>-------------------------</font>`
+            content = `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin"><br><b>🎉 该节点支持 Disneyᐩ  ➟` + OKList[0].split(": 支持 ")[1]+`</b><br><br>👇<br><br><font color=#FF5733>-------------------------<br><b>⟦ `+policy+` ⟧ </b><br>-------------------------</font>`
             $done({"title":"Disneyᐩ 检测&切换", "htmlMessage": content})
         }
     }, relay)
@@ -165,17 +184,18 @@ function ReOrder(cnt) {
         $configuration.sendMessage(mes1).then(resolve => {
             if (resolve.error) {
                 console.log(resolve.error);
-                content =pflag==0 && array[0]? `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br><b>⟦ "+$environment.params+ " ⟧ </b><br><br>🎉 该节点支持 <b>Disneyᐩ ➟" + array[0].split(": 支持 ")[1]+ `</b></p>` : `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br><b>⟦ "+$environment.params+ " ⟧ </b><br><br>⚠️ 该节点不支持 <b>Disneyᐩ </b>" + `</p>`
+                content =pflag==0 && array[0]? `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br><b>⟦ "+policy+ " ⟧ </b><br><br>🎉 该节点支持 <b>Disneyᐩ ➟" + array[0].split(": 支持 ")[1]+ `</b></p>` : `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br><b>⟦ "+policy+ " ⟧ </b><br><br>⚠️ 该节点不支持 <b>Disneyᐩ </b>" + `</p>`
                 
-                content =pflag==0 && ResList[1]? `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br><b>⟦ "+$environment.params+ " ⟧ </b><br><br>🚦 即将登陆节点所在地区 ➟<b>" + ResList[1].split("登陆 ")[1]+`</b> </p>` : content
+                content =pflag==0 && ResList[1]? `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br><b>⟦ "+policy+ " ⟧ </b><br><br>🚦 即将登陆节点所在地区 ➟<b>" + ResList[1].split("登陆 ")[1]+`</b> </p>` : content
                 
-                content = pflag!=0 && !array[0]? `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br>❌   <b>⟦ "+$environment.params+ " ⟧ </b>⚠️ 切换失败<br><br>该策略组内未找到支持 <b>Disneyᐩ </b>的节点" + "<br><br>-----------------------------<br><b><font color=#FF5733>检测详情请查看JS脚本记录</font></b><br>-----------------------------"+`</p>` : content
+                content = pflag!=0 && !array[0]? `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br>❌   <b>⟦ "+policy+ " ⟧ </b>⚠️ 切换失败<br><br>该策略组内未找到支持 <b>Disneyᐩ </b>的节点" + "<br><br>-----------------------------<br><b><font color=#FF5733>检测详情请查看JS脚本记录</font></b><br>-----------------------------"+`</p>` : content
                 console.log(content)
                 $done({"title":"Disneyᐩ 检测&切换", "htmlMessage": content})
             }
             if (resolve.ret) {
                 console.log("已经切换至支持 Disneyᐩ"+array[0].split(": 支持 ")[1]+"的路线 ➟ "+array[0].split(": 支持 ")[0])
-                content = `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br> <b>⟦ "+$environment.params+ " ⟧</b> 已切换至支持 <b>Disneyᐩ "+array[0].split(": 支持 ")[1]+"</b>中延迟最优的路线<br> <br>👇<br><br> ⟦ "+array[0].split(": 支持 ")[0]+ " ⟧" + "<br><br><font color=#16A085>"+Ping+"</font><br><font color=#FF5733>-----------------------------<br><b><font color=#FF5733>检测详情请查看JS脚本记录</font></b><br>-----------------------------"+`</p>`
+                if (cronsign == "Y") { $notify("📺 Disneyᐩ 定时检测&切换", "🎉 已经切换至支持 Disneyᐩ 的最优延迟线路👇", array[0] +"\n 👉 "+Ping)}
+                content = `<p style="text-align: center; font-family: -apple-system; font-size: large; font-weight: thin">` + "<br> <b>⟦ "+policy+ " ⟧</b> 已切换至支持 <b>Disneyᐩ "+array[0].split(": 支持 ")[1]+"</b>中延迟最优的路线<br> <br>👇<br><br> ⟦ "+array[0].split(": 支持 ")[0]+ " ⟧" + "<br><br><font color=#16A085>"+Ping+"</font><br><font color=#FF5733>-----------------------------<br><b><font color=#FF5733>检测详情请查看JS脚本记录</font></b><br>-----------------------------"+`</p>`
                 $done({"title":"Disneyᐩ 检测&切换", "htmlMessage": content })
             }
     }, reject => {
@@ -200,7 +220,7 @@ async function testDisneyPlus(pname) {
 //          console.log(pname+"22: 即将登陆"+region)
 //          return { region, status: STATUS_COMING }
 //      }
-        let { countryCode, inSupportedLocation } = await Promise.race([getLocationInfo(pname), timeout(7000)])
+        let { countryCode, inSupportedLocation, accessToken } = await Promise.race([getLocationInfo(pname), timeout(7000)])
         //console.log(`getLocationInfo: countryCode=${countryCode}, inSupportedLocation=${inSupportedLocation}`)
         
         region = countryCode ?? region
@@ -217,6 +237,13 @@ async function testDisneyPlus(pname) {
             console.log(pname+": 支持 「"+region+"」")
             return { region, status: STATUS_AVAILABLE }
         }
+        let support = await Promise.race([testPublicGraphqlAPI(accessToken), timeout(7000)])
+      if (!support) {
+      return { status: STATUS_NOT_AVAILABLE }
+    }
+    // 支持解锁
+    return { region, status: STATUS_AVAILABLE }
+
     } // sign    
     } catch (error) {
         //console.log(pname+": 检测错误"+error)
@@ -263,17 +290,17 @@ function getLocationInfo(pname) {
                     input: {
                         applicationRuntime: 'chrome',
                         attributes: {
-                            browserName: 'chrome',
-                            browserVersion: '94.0.4606',
-                            manufacturer: 'microsoft',
-                            model: null,
-                            operatingSystem: 'windows',
-                            operatingSystemVersion: '10.0',
-                            osDeviceIds: [],
+                          browserName: 'chrome',
+                          browserVersion: '94.0.4606',
+                          manufacturer: 'apple',
+                          model: null,
+                          operatingSystem: 'macintosh',
+                          operatingSystemVersion: '10.15.7',
+                          osDeviceIds: [],
                         },
                         deviceFamily: 'browser',
                         deviceLanguage: 'en',
-                        deviceProfile: 'windows',
+                        deviceProfile: 'macosx',
                     },
                 },
             }),
@@ -286,11 +313,15 @@ function getLocationInfo(pname) {
                 //console.log('getLocationInfo: ' + data)
                 reject('Not Available')
                 return
-            } else {let {
-                inSupportedLocation,
-                location: { countryCode },
-            } = JSON.parse(data)?.extensions?.sdk?.session
-                resolve({ inSupportedLocation, countryCode })
+            } else {
+                let {
+                  token: { accessToken },
+                  session: {
+                    inSupportedLocation,
+                    location: { countryCode },
+            },
+            } = JSON.parse(data)?.extensions?.sdk
+                resolve({ inSupportedLocation, countryCode, accessToken })
             }
         }, reason => {
             reject('Error')
@@ -315,7 +346,7 @@ function testHomePage(pname) {
         $task.fetch(opts0).then(response => {
             let data = response.body
             //console.log("homepage"+response.statusCode)
-            if (response.statusCode !== 200 || data.indexOf('unavailable') !== -1) {
+            if (response.statusCode !== 200 || data.indexOf('not available in your') !== -1) {
                 reject('Not Available')
                 return
             } else {
@@ -335,6 +366,33 @@ function testHomePage(pname) {
             return
         })
     })
+}
+
+function testPublicGraphqlAPI(accessToken) {
+  return new Promise((resolve, reject) => {
+    let opts = {
+      url: 'https://disney.api.edge.bamgrid.com/v1/public/graphql',
+      headers: {
+        'Accept-Language': 'en',
+        Authorization: accessToken,
+        'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36',
+      },
+      body: JSON.stringify({
+        query:
+          'query($preferredLanguages: [String!]!, $version: String) {globalization(version: $version) { uiLanguage(preferredLanguages: $preferredLanguages) }}',
+        variables: { version: '1.5.0', preferredLanguages: ['en'] },
+      }),
+    }
+
+    $task.fetch(opts).then( response => {
+
+      resolve(response.status === 200)
+    }, reason => {
+        reject('Error')
+        return
+    })
+  })
 }
 
 function timeout(delay = 5000) {
